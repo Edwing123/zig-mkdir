@@ -10,9 +10,8 @@ const Args = struct {
     parents: bool,
     len: usize,
 
-    fn init(allocator: mem.Allocator, args_slice: [][]u8) !*Args {
-        var args = try allocator.create(Args);
-        args.* = Args {
+    fn create(args_slice: [][]u8) Args {
+        var args = Args {
             .len = args_slice.len,
             .parents = false,
             .dir_path = null,
@@ -41,10 +40,7 @@ pub fn main() void {
     };
     defer std.process.argsFree(allocator, args_slice);
 
-    const args = Args.init(allocator, args_slice[1..]) catch |err| {
-        logError(err);
-    };
-    defer allocator.destroy(args);
+    const args = Args.create(args_slice[1..]);
 
     if (args.dir_path == null) {
         log.err("the dir path is missing", .{});
