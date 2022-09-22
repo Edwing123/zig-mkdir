@@ -52,8 +52,8 @@ pub fn main() void {
     }
 
     const dir_path = args.dir_path.?;
-
     const dir = fs.cwd();
+
     if (args.parents) {
         dir.makePath(dir_path) catch |err| {
             logError(err);
