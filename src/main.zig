@@ -1,6 +1,5 @@
 const std = @import("std");
 const fs = std.fs;
-const path = std.fs.path;
 const heap = std.heap;
 const exit = std.os.exit;
 const mem = std.mem;
@@ -53,23 +52,16 @@ pub fn main() void {
     }
 
     const dir_path = args.dir_path.?;
-    const is_absolute_path = path.isAbsolute(dir_path);
 
-    if (is_absolute_path) {
-        fs.makeDirAbsolute(dir_path) catch |err| {
+    const dir = fs.cwd();
+    if (args.parents) {
+        dir.makePath(dir_path) catch |err| {
             logError(err);
         };
     } else {
-        const dir = fs.cwd();
-        if (args.parents) {
-            dir.makePath(dir_path) catch |err| {
-                logError(err);
-            };
-        } else {
-            dir.makeDir(dir_path) catch |err| {
-                logError(err);
-            };
-        }
+        dir.makeDir(dir_path) catch |err| {
+            logError(err);
+        };
     }
 
     log.info("dir '{s}' created sucessfully", .{dir_path});
