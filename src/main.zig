@@ -33,8 +33,10 @@ const Args = struct {
 const buffer_size = 1024;
 
 pub fn main() void {
-    var gpa = heap.ArenaAllocator.init(heap.page_allocator);
-    var sfa = heap.stackFallback(buffer_size, gpa.allocator());
+    var arena = heap.ArenaAllocator.init(heap.page_allocator);
+    defer arena.deinit();
+
+    var sfa = heap.stackFallback(buffer_size, arena.allocator());
     const allocator = sfa.get();
 
     const args_slice = std.process.argsAlloc(allocator) catch |err| {
