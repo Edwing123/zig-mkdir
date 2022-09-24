@@ -5,31 +5,6 @@ const exit = std.os.exit;
 const mem = std.mem;
 const log = @import("./log.zig");
 
-const Args = struct {
-    dir_path: ?[]const u8,
-    parents: bool,
-    len: usize,
-
-    fn create(args_slice: [][]u8) Args {
-        var args = Args {
-            .len = args_slice.len,
-            .parents = false,
-            .dir_path = null,
-        };
-
-        for (args_slice) |arg| {
-            if (mem.eql(u8, "-p", arg)) {
-                args.parents = true;
-                continue;
-            }
-
-            args.dir_path = arg;
-        }
-
-        return args;
-    }
-};
-
 const buffer_size = 1024;
 
 pub fn main() void {
@@ -40,34 +15,36 @@ pub fn main() void {
     const allocator = sfa.get();
 
     const args_slice = std.process.argsAlloc(allocator) catch |err| {
-        logError(err);
+        log.err("{s}" , .{@errorName(err)});
+        exit(1);
     };
-    defer std.process.argsFree(allocator, args_slice);
 
-    const args = Args.create(args_slice[1..]);
-
-    if (args.dir_path == null) {
-        log.err("the dir path is missing", .{});
+    if (args_slice.len < 2) {
+        log.err("No paths provided", .{});
         exit(1);
     }
 
-    const dir_path = args.dir_path.?;
     const dir = fs.cwd();
 
-    if (args.parents) {
-        dir.makePath(dir_path) catch |err| {
-            logError(err);
+    // Iterable over all args, except the first one,
+    // because that's the path of the executable.
+    for (args_slice[1..]) |arg| {
+        makeDir(arg, dir) catch |err| {
+            log.err("while creating '{s}', {s}", .{ arg, @errorName(err) });
+            continue;
         };
-    } else {
-        dir.makeDir(dir_path) catch |err| {
-            logError(err);
-        };
-    }
 
-    log.info("dir '{s}' created sucessfully", .{dir_path});
+        log.info("dir '{s}' created sucessfully", .{arg});
+    }   
 }
 
-fn logError(err: anyerror) noreturn {
-    log.err("{s}" , .{@errorName(err)});
-    exit(1);
+fn makeDir(path: []const u8, dir: fs.Dir) !void {
+    const is_absolute = fs.path.isAbsolute(path);
+
+    if (is_absolute) {
+        try dir.makePath(path);
+        return;
+    }
+
+    try dir.makeDir(path);
 }
